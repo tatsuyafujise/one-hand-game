@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>進化ゲーム</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; background: #f5f5f0; display: flex; justify-content: center; padding: 1rem; }
+#game-wrap { display: flex; gap: 16px; align-items: flex-start; justify-content: center; padding: 1rem 0; flex-wrap: wrap; }
+#left-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#ui { display: flex; justify-content: space-between; align-items: center; width: 360px; }
+#score-box { font-size: 13px; color: #888; }
+#score-val { font-size: 22px; font-weight: 500; color: #222; }
+#next-box { font-size: 12px; color: #888; text-align: center; }
+#game-over-screen {
+  display: none; position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.55);
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+  border-radius: 0 0 12px 12px;
+}
+#game-over-screen h2 { color: #fff; font-size: 24px; font-weight: 500; }
+#game-over-screen p { color: rgba(255,255,255,0.8); font-size: 14px; }
+#restart-btn {
+  background: #fff; color: #333; border: none;
+  padding: 8px 24px; border-radius: 999px;
+  font-size: 15px; cursor: pointer; font-weight: 500;
+}
+#wrap-rel { position: relative; }
+canvas { display: block; }
+#evolution-panel {
+  background: #fff; border: 0.5px solid rgba(0,0,0,0.1);
+  border-radius: 12px; padding: 12px 10px; width: 130px;
+}
+#evolution-panel h3 { font-size: 12px; font-weight: 500; color: #888; margin-bottom: 8px; text-align: center; }
+.evo-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.evo-circle { border-radius: 50%; flex-shrink: 0; }
+.evo-label { font-size: 11px; color: #222; flex: 1; }
+.evo-pts { font-size: 10px; color: #aaa; }
+.evo-arrow { font-size: 10px; color: #ccc; text-align: center; line-height: 1; margin-bottom: 2px; padding-left: 6px; }
+</style>
+</head>
+<body>
+  <a href="index.html" class="back-to-menu">← 戻る</a>
+  <style>
+    .back-to-menu { position: absolute; top: 10px; left: 10px; background-color: #3498db; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 9999; }
+  </style>
+<div id="game-wrap">
+  <div id="left-col">
+    <div id="ui">
+      <div id="score-box">スコア<br><span id="score-val">0</span></div>
+      <div id="next-box">次のフルーツ<br><canvas id="next-canvas" width="50" height="50"></canvas></div>
+    </div>
+    <div id="wrap-rel">
+      <canvas id="c" width="360" height="500"></canvas>
+      <div id="game-over-screen">
+        <h2>ゲームオーバー</h2>
+        <p id="final-score-txt"></p>
+        <button id="restart-btn">もう一度</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="evolution-panel">
+    <h3>フルーツ進化表</h3>
+    <div id="evo-list"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+const FRUITS = [
+  { r: 15,  name: 'チェリー',  color: '#e74c3c', pts: 1  },
+  { r: 22,  name: 'イチゴ',    color: '#e91e63', pts: 3  },
+  { r: 30,  name: 'ブドウ',    color: '#9b59b6', pts: 6  },
+  { r: 38,  name: 'デコポン',  color: '#e67e22', pts: 10 },
+  { r: 46,  name: 'かき',      color: '#d35400', pts: 15 },
+  { r: 54,  name: 'りんご',    color: '#c0392b', pts: 21 },
+  { r: 62,  name: 'なし',      color: '#f1c40f', pts: 28 },
+  { r: 70,  name: 'もも',      color: '#ff8fa3', pts: 36 },
+  { r: 80,  name: 'パイン',    color: '#f39c12', pts: 45 },
+  { r: 90,  name: 'メロン',    color: '#27ae60', pts: 55 },
+  { r: 105, name: 'スイカ',    color: '#2ecc71', pts: 66 },
+];
+
+// 進化表を動的生成
+const evoList = document.getElementById('evo-list');
+FRUITS.forEach((f, i) => {
+  const size = Math.max(10, Math.min(28, f.r * 0.38));
+  const row = document.createElement('div');
+  row.className = 'evo-row';
+  row.innerHTML = `
+    <div class="evo-circle" style="width:${size}px;height:${size}px;background:${f.color};"></div>
+    <span class="evo-label">${f.name}</span>
+    <span class="evo-pts">${f.pts}pt</span>
+  `;
+  evoList.appendChild(row);
+  if (i < FRUITS.length - 1) {
+    const arr = document.createElement('div');
+    arr.className = 'evo-arrow';
+    arr.textContent = '↓';
+    evoList.appendChild(arr);
+  }
+});
+
+const { Engine, Bodies, Body, Events, World } = Matter;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('next-canvas');
+const nextCtx = nextCanvas.getContext('2d');
+const W = 360, H = 500;
+const WALL_T = 30;
+const DROP_Y = 50;
+const DANGER_Y = 90;
+
+const engine = Engine.create({ gravity: { y: 2 } });
+const world = engine.world;
+const ground = Bodies.rectangle(W/2, H + WALL_T/2, W, WALL_T, { isStatic: true, friction: 0.5 });
+const wallL  = Bodies.rectangle(-WALL_T/2, H/2, WALL_T, H*2, { isStatic: true, friction: 0.5 });
+const wallR  = Bodies.rectangle(W + WALL_T/2, H/2, WALL_T, H*2, { isStatic: true, friction: 0.5 });
+World.add(world, [ground, wallL, wallR]);
+
+let score = 0, mouseX = W/2, dropping = false, dropDelay = 0;
+let gameOver = false, dangerTimer = 0;
+let curType = randType(), nextType = randType();
+let merging = new Set(), fruitBodies = [];
+
+function randType() { return Math.floor(Math.random() * 5); }
+
+function drawFruitShape(c, x, y, r, color, name) {
+  c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2);
+  c.fillStyle = color; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,0.15)'; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = 'rgba(255,255,255,0.35)';
+  c.beginPath(); c.arc(x - r * 0.25, y - r * 0.25, r * 0.3, 0, Math.PI * 2); c.fill();
+  if (r >= 30) {
+    c.fillStyle = 'rgba(0,0,0,0.55)';
+    c.font = `${Math.max(10, Math.floor(r * 0.38))}px sans-serif`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(name, x, y);
+  }
+}
+
+function drawNext() {
+  nextCtx.clearRect(0, 0, 50, 50);
+  const f = FRUITS[nextType];
+  drawFruitShape(nextCtx, 25, 25, Math.min(f.r * 0.7, 22), f.color, '');
+}
+
+function addFruit(x, y, type) {
+  const f = FRUITS[type];
+  const body = Bodies.circle(x, y, f.r, {
+    restitution: 0.3, friction: 0.5, frictionAir: 0.01,
+    density: 0.002, label: 'fruit',
+    collisionFilter: { category: 0x0001, mask: 0x0001 }
+  });
+  body._fruitType = type;
+  body._id = Math.random();
+  World.add(world, body);
+  fruitBodies.push(body);
+  return body;
+}
+
+Events.on(engine, 'collisionStart', e => {
+  if (gameOver) return;
+  e.pairs.forEach(({ bodyA, bodyB }) => {
+    if (bodyA.label !== 'fruit' || bodyB.label !== 'fruit') return;
+    if (bodyA._fruitType !== bodyB._fruitType) return;
+    const t = bodyA._fruitType;
+    if (t >= FRUITS.length - 1) return;
+    const key = [bodyA._id, bodyB._id].sort().join('_');
+    if (merging.has(key)) return;
+    merging.add(key);
+    setTimeout(() => {
+      if (!world.bodies.includes(bodyA) || !world.bodies.includes(bodyB)) {
+        merging.delete(key); return;
+      }
+      const mx = (bodyA.position.x + bodyB.position.x) / 2;
+      const my = (bodyA.position.y + bodyB.position.y) / 2;
+      World.remove(world, bodyA); World.remove(world, bodyB);
+      fruitBodies = fruitBodies.filter(b => b !== bodyA && b !== bodyB);
+      addFruit(mx, my, t + 1);
+      score += FRUITS[t + 1].pts;
+      document.getElementById('score-val').textContent = score;
+      merging.delete(key);
+    }, 50);
+  });
+});
+
+function drop() {
+  if (dropping || gameOver) return;
+  const x = Math.max(FRUITS[curType].r + 5, Math.min(W - FRUITS[curType].r - 5, mouseX));
+  addFruit(x, DROP_Y, curType);
+  dropping = true; dropDelay = 60;
+  curType = nextType; nextType = randType(); drawNext();
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = (e.clientX - rect.left) * (W / rect.width);
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  mouseX = (e.touches[0].clientX - rect.left) * (W / rect.width);
+}, { passive: false });
+canvas.addEventListener('click', drop);
+canvas.addEventListener('touchend', e => { e.preventDefault(); drop(); }, { passive: false });
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  fruitBodies.forEach(b => World.remove(world, b));
+  fruitBodies = []; merging.clear();
+  score = 0; document.getElementById('score-val').textContent = '0';
+  gameOver = false; dropping = false; dropDelay = 0; dangerTimer = 0;
+  curType = randType(); nextType = randType(); drawNext();
+  document.getElementById('game-over-screen').style.display = 'none';
+});
+
+function checkGameOver() {
+  for (const b of fruitBodies) {
+    if (b.position.y - FRUITS[b._fruitType].r < DANGER_Y) {
+      if (++dangerTimer > 120) {
+        gameOver = true;
+        document.getElementById('final-score-txt').textContent = `スコア: ${score}`;
+        document.getElementById('game-over-screen').style.display = 'flex';
+      }
+      return;
+    }
+  }
+  dangerTimer = 0;
+}
+
+function loop() {
+  Engine.update(engine, 1000 / 60);
+  if (dropDelay > 0 && --dropDelay === 0) dropping = false;
+  if (!gameOver) checkGameOver();
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#f9f8f4';
+  ctx.fillRect(0, 0, W, H);
+
+  // 危険ライン
+  ctx.strokeStyle = 'rgba(231,76,60,0.25)';
+  ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, DANGER_Y); ctx.lineTo(W, DANGER_Y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(231,76,60,0.45)';
+  ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('ここまで来るとゲームオーバー', W - 6, DANGER_Y - 4);
+
+  // フルーツ描画
+  for (const b of fruitBodies) {
+    const f = FRUITS[b._fruitType];
+    ctx.save();
+    ctx.translate(b.position.x, b.position.y);
+    ctx.rotate(b.angle);
+    ctx.translate(-b.position.x, -b.position.y);
+    drawFruitShape(ctx, b.position.x, b.position.y, f.r, f.color, f.name);
+    ctx.restore();
+  }
+
+  // ドロップ予告
+  if (!dropping && !gameOver) {
+    const f = FRUITS[curType];
+    const cx = Math.max(f.r + 5, Math.min(W - f.r - 5, mouseX));
+    ctx.globalAlpha = 0.5;
+    drawFruitShape(ctx, cx, DROP_Y, f.r, f.color, f.name);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(cx, DROP_Y + f.r); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 2; ctx.strokeRect(1, 1, W - 2, H - 2);
+  requestAnimationFrame(loop);
+}
+
+drawNext();
+loop();
+</script>
+</body>
+</html>
