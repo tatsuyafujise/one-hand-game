@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>片手ゲーム</title>
+    <style>
+        /* 全体のスタイル */
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        /* ヘッダーのスタイル */
+        header {
+            background-color: #2c3e50;
+            color: #ffffff;
+            text-align: center;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+
+        /* ゲームを並べるコンテナ */
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            padding: 0 20px 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 各ゲームのカードスタイル */
+        .game-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+            width: 300px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+
+        /* ゲームのイメージ画像 */
+        .game-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #e9ecef; /* 画像がない場合の背景色 */
+            border-bottom: 1px solid #eee;
+        }
+
+        /* カード下部の情報エリア */
+        .game-info {
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .game-title {
+            font-size: 1.3rem;
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+
+        /* プレイボタン */
+        .play-btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            margin-top: auto; /* ボタンを一番下に押しやる */
+        }
+
+        .play-btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>片手ゲーム</h1>
+    </header>
+
+    <div class="game-container">
+        
+        <div class="game-card">
+            <img src="images/breakout.png" alt="ブロック崩しのプレイ画面" class="game-thumbnail">
+            <div class="game-info">
+                <h2 class="game-title">ブロック崩し</h2>
+                <a href="breakout.html" class="play-btn">プレイする</a>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <img src="images/tetris.png" alt="テトリスのプレイ画面" class="game-thumbnail">
+            <div class="game-info">
+                <h2 class="game-title">テトリス</h2>
+                <a href="tetris.html" class="play-btn">プレイする</a>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <img src="images/reversi.png" alt="リバーシのプレイ画面" class="game-thumbnail">
+            <div class="game-info">
+                <h2 class="game-title">リバーシ</h2>
+                <a href="reversi.html" class="play-btn">プレイする</a>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
