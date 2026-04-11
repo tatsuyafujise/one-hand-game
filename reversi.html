@@ -3,153 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オセロ（再戦ボタン付き）</title>
+    <title>オセロ</title>
     <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f0f0f0;
-            margin-top: 50px;
-        }
-        #turn-display {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        #status-message {
-            font-size: 16px;
-            color: #d9534f;
-            height: 24px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        #board {
-            display: grid;
-            grid-template-columns: repeat(8, 50px);
-            grid-template-rows: repeat(8, 50px);
-            gap: 2px;
-            background-color: #333;
-            border: 2px solid #333;
-            padding: 2px;
-        }
-        .cell {
-            width: 50px;
-            height: 50px;
-            background-color: #228B22;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-        .disc {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            transition: transform 0.2s;
-        }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #f0f0f0; margin-top: 50px; }
+        #turn-display { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+        #status-message { font-size: 16px; color: #d9534f; height: 24px; margin-bottom: 10px; font-weight: bold; }
+        
+        /* PC用の基本スタイル */
+        #board { display: grid; grid-template-columns: repeat(8, 50px); grid-template-rows: repeat(8, 50px); gap: 2px; background-color: #333; border: 2px solid #333; padding: 2px; }
+        .cell { width: 50px; height: 50px; background-color: #228B22; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .disc { width: 40px; height: 40px; border-radius: 50%; transition: transform 0.2s; }
         .black { background-color: black; }
         .white { background-color: white; }
+        .candidate { width: 12px; height: 12px; background-color: rgba(0, 0, 0, 0.3); border-radius: 50%; }
         
-        .candidate {
-            width: 15px;
-            height: 15px;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 50%;
-        }
+        #score { margin-top: 20px; font-size: 18px; font-weight: bold; }
+        #restart-container { margin-top: 20px; height: 50px; }
+        #restart-btn { padding: 10px 20px; font-size: 16px; font-weight: bold; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; display: none; }
         
-        #score {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        /* 再スタートボタンのスタイル */
-        #restart-container {
-            margin-top: 20px;
-            height: 50px;
-        }
-        #restart-btn {
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: none; /* 初期状態は非表示 */
-        }
-        #restart-btn:hover {
-            background-color: #0056b3;
+        /* スマホ用（画面幅が500px以下の場合のみ適用されるスタイル） */
+        @media (max-width: 500px) {
+            #board { grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); }
+            .cell { width: 11vw; height: 11vw; }
+            .disc { width: 9vw; height: 9vw; }
         }
     </style>
 </head>
 <body>
-    <a href="index.html" class="back-to-menu">← メニューに戻る</a>
-        <style>
-        .back-to-menu {
-            position: fixed; /* 画面の左上に固定 */
-            top: 20px;
-            left: 20px;
-            background-color: #3498db;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-weight: bold;
-            font-size: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: all 0.2s ease;
-            z-index: 9999; /* 常に一番手前に表示 */
-        }
-        .back-to-menu:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
-        </style>
+
+    <a href="index.html" class="back-to-menu">← 戻る</a>
+    <style>
+      .back-to-menu { position: fixed; top: 10px; left: 10px; background-color: #3498db; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 9999; }
+    </style>
 
     <div id="turn-display">あなた（黒）の番です</div>
     <div id="status-message"></div>
     <div id="board"></div>
     <div id="score">黒: 2 | 白: 2</div>
-
-    <div id="restart-container">
-        <button id="restart-btn" onclick="initGame()">もう一度遊ぶ</button>
-    </div>
+    <div id="restart-container"><button id="restart-btn" onclick="initGame()">もう一度遊ぶ</button></div>
 
     <script>
-        const EMPTY = 0;
-        const BLACK = 1; 
-        const WHITE = 2; 
-        const BOARD_SIZE = 8;
-        
-        let board = [];
-        let currentPlayer = BLACK;
-        let isGameOver = false;
-        
-        const DIRECTIONS = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [ 0, -1],          [ 0, 1],
-            [ 1, -1], [ 1, 0], [ 1, 1]
-        ];
+        const EMPTY = 0, BLACK = 1, WHITE = 2, BOARD_SIZE = 8;
+        let board = [], currentPlayer = BLACK, isGameOver = false;
+        const DIRECTIONS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        const CORNERS = [[0,0],[0,7],[7,0],[7,7]];
 
-        const CORNERS = [[0, 0], [0, 7], [7, 0], [7, 7]];
-
-        // ゲームの初期化・リセット
         function initGame() {
             board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
-            board[3][3] = WHITE;
-            board[3][4] = BLACK;
-            board[4][3] = BLACK;
-            board[4][4] = WHITE;
-            
-            currentPlayer = BLACK;
-            isGameOver = false;
-
-            // UIをリセット
+            board[3][3] = WHITE; board[3][4] = BLACK; board[4][3] = BLACK; board[4][4] = WHITE;
+            currentPlayer = BLACK; isGameOver = false;
             document.getElementById('status-message').innerText = "";
             document.getElementById('restart-btn').style.display = 'none';
             render();
@@ -157,51 +59,27 @@
 
         function getFlippableDiscs(row, col, player) {
             if (board[row][col] !== EMPTY) return [];
-            let flippable = [];
-            let opponent = player === BLACK ? WHITE : BLACK;
-
+            let flippable = [], opponent = player === BLACK ? WHITE : BLACK;
             for (let [dr, dc] of DIRECTIONS) {
-                let r = row + dr;
-                let c = col + dc;
-                let tempFlippable = [];
-                while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === opponent) {
-                    tempFlippable.push([r, c]);
-                    r += dr;
-                    c += dc;
-                }
-                if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
-                    flippable.push(...tempFlippable);
-                }
+                let r = row + dr, c = col + dc, temp = [];
+                while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === opponent) { temp.push([r, c]); r += dr; c += dc; }
+                if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) flippable.push(...temp);
             }
             return flippable;
         }
 
-        function isValidMove(row, col, player) {
-            return getFlippableDiscs(row, col, player).length > 0;
-        }
-
-        function getAllValidMoves(player) {
-            let moves = [];
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    if (isValidMove(r, c, player)) moves.push([r, c]);
-                }
-            }
-            return moves;
-        }
+        function isValidMove(row, col, player) { return getFlippableDiscs(row, col, player).length > 0; }
+        function getAllValidMoves(player) { let moves = []; for (let r=0; r<BOARD_SIZE; r++) for (let c=0; c<BOARD_SIZE; c++) if (isValidMove(r,c,player)) moves.push([r,c]); return moves; }
 
         function handleCellClick(row, col) {
             if (isGameOver || currentPlayer !== BLACK) return;
             const flippable = getFlippableDiscs(row, col, BLACK);
-            if (flippable.length === 0) return;
-            executeMove(row, col, BLACK, flippable);
+            if (flippable.length > 0) executeMove(row, col, BLACK, flippable);
         }
 
         function executeMove(row, col, player, flippable) {
             board[row][col] = player;
-            for (let [r, c] of flippable) {
-                board[r][c] = player;
-            }
+            for (let [r, c] of flippable) board[r][c] = player;
             document.getElementById('status-message').innerText = "";
             advanceTurn();
         }
@@ -209,78 +87,35 @@
         function advanceTurn() {
             currentPlayer = currentPlayer === BLACK ? WHITE : BLACK;
             render();
-
-            let currentMoves = getAllValidMoves(currentPlayer);
-            
-            if (currentMoves.length === 0) {
+            if (getAllValidMoves(currentPlayer).length === 0) {
                 let opponent = currentPlayer === BLACK ? WHITE : BLACK;
-                let opponentMoves = getAllValidMoves(opponent);
-
-                if (opponentMoves.length === 0) {
-                    isGameOver = true;
-                    setTimeout(endGame, 200);
-                    return;
-                } else {
-                    let passName = currentPlayer === BLACK ? 'あなた(黒)' : 'コンピュータ(白)';
-                    document.getElementById('status-message').innerText = `${passName}がパスしました。`;
-                    currentPlayer = opponent;
-                    setTimeout(render, 500);
+                if (getAllValidMoves(opponent).length === 0) { isGameOver = true; setTimeout(endGame, 200); return; } 
+                else {
+                    document.getElementById('status-message').innerText = `${currentPlayer === BLACK ? 'あなた(黒)' : 'コンピュータ(白)'}がパスしました。`;
+                    currentPlayer = opponent; setTimeout(render, 500);
                     if (currentPlayer === WHITE) setTimeout(computerMove, 1200);
                     return;
                 }
             }
-
-            if (currentPlayer === WHITE) {
-                setTimeout(computerMove, 800);
-            }
+            if (currentPlayer === WHITE) setTimeout(computerMove, 800);
         }
 
         function computerMove() {
             if (isGameOver || currentPlayer !== WHITE) return;
             const moves = getAllValidMoves(WHITE);
             if (moves.length === 0) return;
-
-            let bestMove = null;
-            // 優先1: 角
-            for (let move of moves) {
-                if (CORNERS.some(c => c[0] === move[0] && c[1] === move[1])) {
-                    bestMove = move; break;
-                }
-            }
-            // 優先2: 枚数最大
+            let bestMove = moves.find(m => CORNERS.some(c => c[0]===m[0] && c[1]===m[1]));
             if (!bestMove) {
-                let maxFlipped = -1;
-                for (let move of moves) {
-                    let flipped = getFlippableDiscs(move[0], move[1], WHITE).length;
-                    if (flipped > maxFlipped) {
-                        maxFlipped = flipped;
-                        bestMove = move;
-                    }
-                }
+                let max = -1;
+                for (let m of moves) { let f = getFlippableDiscs(m[0], m[1], WHITE).length; if (f > max) { max = f; bestMove = m; } }
             }
             executeMove(bestMove[0], bestMove[1], WHITE, getFlippableDiscs(bestMove[0], bestMove[1], WHITE));
         }
 
-        // ゲーム終了：結果を表示し、ボタンを出す
         function endGame() {
-            let blackCount = 0;
-            let whiteCount = 0;
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    if (board[r][c] === BLACK) blackCount++;
-                    else if (board[r][c] === WHITE) whiteCount++;
-                }
-            }
-            
-            let resultTxt = "";
-            if (blackCount > whiteCount) resultTxt = `あなたの勝ち！ (${blackCount}-${whiteCount})`;
-            else if (whiteCount > blackCount) resultTxt = `コンピュータの勝ち！ (${blackCount}-${whiteCount})`;
-            else resultTxt = `引き分け！ (${blackCount}-${whiteCount})`;
-            
+            let b = 0, w = 0; board.flat().forEach(v => { if(v===BLACK) b++; if(v===WHITE) w++; });
             document.getElementById('turn-display').innerText = "ゲーム終了";
-            document.getElementById('status-message').innerText = resultTxt;
-            
-            // 「もう一度遊ぶ」ボタンを表示
+            document.getElementById('status-message').innerText = b > w ? `あなたの勝ち！ (${b}-${w})` : w > b ? `PCの勝ち！ (${b}-${w})` : `引き分け！ (${b}-${w})`;
             document.getElementById('restart-btn').style.display = 'block';
         }
 
@@ -288,39 +123,20 @@
             const boardElement = document.getElementById('board');
             boardElement.innerHTML = '';
             const validMoves = (currentPlayer === BLACK && !isGameOver) ? getAllValidMoves(BLACK) : [];
-            
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.onclick = () => handleCellClick(r, c);
-
-                    if (board[r][c] === BLACK) {
-                        const disc = document.createElement('div');
-                        disc.className = 'disc black';
-                        cell.appendChild(disc);
-                    } else if (board[r][c] === WHITE) {
-                        const disc = document.createElement('div');
-                        disc.className = 'disc white';
-                        cell.appendChild(disc);
-                    } else if (validMoves.some(m => m[0] === r && m[1] === c)) {
-                        const marker = document.createElement('div');
-                        marker.className = 'candidate';
-                        cell.appendChild(marker);
-                    }
+                    cell.className = 'cell'; cell.onclick = () => handleCellClick(r, c);
+                    if (board[r][c] === BLACK) cell.innerHTML = '<div class="disc black"></div>';
+                    else if (board[r][c] === WHITE) cell.innerHTML = '<div class="disc white"></div>';
+                    else if (validMoves.some(m => m[0] === r && m[1] === c)) cell.innerHTML = '<div class="candidate"></div>';
                     boardElement.appendChild(cell);
                 }
             }
-
-            if (!isGameOver) {
-                document.getElementById('turn-display').innerText = currentPlayer === BLACK ? 'あなた（黒）の番です' : 'コンピュータ（白）が思考中...';
-            }
-            
-            let b = 0, w = 0;
-            board.flat().forEach(v => { if(v===BLACK) b++; if(v===WHITE) w++; });
+            if (!isGameOver) document.getElementById('turn-display').innerText = currentPlayer === BLACK ? 'あなた（黒）の番です' : 'コンピュータ思考中...';
+            let b = 0, w = 0; board.flat().forEach(v => { if(v===BLACK) b++; if(v===WHITE) w++; });
             document.getElementById('score').innerText = `黒(あなた): ${b} | 白(PC): ${w}`;
         }
-
         initGame();
     </script>
 </body>
