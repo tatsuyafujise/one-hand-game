@@ -65,7 +65,7 @@
     
     <div class="panel-box pc-only">
       <div id="controls-info">
-        ← → : 移動<br>↑ : 回転<br>↓ : 下移動<br>Space : 落下<br>Shift : 一時停止<br>Enter : 開始
+        ← → : 移動<br>↑ : 回転<br>↓ : 下移動<br>Command : 落下<br>Shift : 一時停止<br>Enter : 開始
       </div>
     </div>
   </div>
@@ -208,7 +208,7 @@ document.addEventListener('keydown', e => {
   
   if(e.key === 'ArrowLeft') moveLeft(); else if(e.key === 'ArrowRight') moveRight();
   else if(e.key === 'ArrowDown') drop(); else if(e.key === 'ArrowUp') piece = rotate(piece);
-  else if(e.key === ' ') hardDrop();
+  else if(e.key === 'Meta') hardDrop();
   draw();
 });
 
